@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Penjualan</title>
+    <link rel="stylesheet" href="laporan.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Laporan Penjualan</h2>
+        <div class="filter">
+            <button onclick="tampilkanHariIni()">Hari Ini</button>
+            <button onclick="tampilkanBulan(1)">Januari</button>
+            <button onclick="tampilkanBulan(2)">Februari</button>
+            <button onclick="tampilkanBulan(3)">Maret</button>
+            <button onclick="tampilkanBulan(4)">April</button>
+            <button onclick="tampilkanBulan(5)">Mei</button>
+            <button onclick="tampilkanBulan(6)">Juni</button>
+            <button onclick="tampilkanBulan(7)">Juli</button>
+            <button onclick="tampilkanBulan(8)">Agustus</button>
+            <button onclick="tampilkanBulan(9)">September</button>
+            <button onclick="tampilkanBulan(10)">Oktober</button>
+            <button onclick="tampilkanBulan(11)">November</button>
+            <button onclick="tampilkanBulan(12)">Desember</button>
+        </div>
+        <h3>Data Penjualan</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Nama Produk</th>
+                    <th>Harga Jual</th>
+                    <th>Harga Modal</th>
+                    <th>Jumlah</th>
+                    <th>Metode Pembayaran</th>
+                    <th>Tanggal</th>
+                    <th>Laba</th>
+                </tr>
+            </thead>
+            <tbody id="tabelLaporan"></tbody>
+        </table>
+        <h3>Total Pendapatan: Rp <span id="totalPendapatan">0</span></h3>
+        <h3>Total Laba: Rp <span id="totalLaba">0</span></h3>
+    </div>
+    
+    <script>
+        // Ambil data dari localStorage
+        let transaksi = JSON.parse(localStorage.getItem('transaksi')) || [];
+        let produk = JSON.parse(localStorage.getItem('produk')) || [];
+
+        // Fungsi untuk mendapatkan harga modal berdasarkan nama produk
+        function getHargaModal(namaProduk) {
+            let item = produk.find(p => p.nama === namaProduk);
+            return item ? parseInt(item.hargaModal) : 0;
+        }
+
+        // Fungsi menampilkan laporan dengan filter tertentu
+        function tampilkanLaporan(filterFn) {
+            let tabel = document.getElementById("tabelLaporan");
+            let totalPendapatan = 0;
+            let totalLaba = 0;
+            tabel.innerHTML = "";
+
+            let groupedTransactions = {};
+            transaksi.filter(filterFn).forEach(t => {
+                if (!groupedTransactions[t.metodePembayaran]) {
+                    groupedTransactions[t.metodePembayaran] = [];
+                }
+                groupedTransactions[t.metodePembayaran].push(t);
+            });
+
+            for (let metode in groupedTransactions) {
+                let no = 1; 
+                let rows = groupedTransactions[metode].map(t => {
+                    let hargaModal = getHargaModal(t.nama);
+                    let laba = (t.harga - hargaModal) * t.jumlah;
+                    totalPendapatan += t.harga * t.jumlah;
+                    totalLaba += laba;
+                    return `
+                        <tr>
+                            <td>${no++}</td>
+                            <td>${t.nama}</td>
+                            <td>Rp ${t.harga.toLocaleString()}</td>
+                            <td>Rp ${hargaModal.toLocaleString()}</td>
+                            <td>${t.jumlah}</td>
+                            <td>${t.metodePembayaran}</td>
+                            <td>${t.tanggal}</td>
+                            <td>Rp ${laba.toLocaleString()}</td>
+                        </tr>
+                    `;
+                }).join('');
+                tabel.innerHTML += `<tr><td colspan="8" style="background:#f0f0f0;font-weight:bold;">${metode}</td></tr>` + rows;
+            }
+
+            document.getElementById("totalPendapatan").textContent = totalPendapatan.toLocaleString();
+            document.getElementById("totalLaba").textContent = totalLaba.toLocaleString();
+        }
+
+        // Fungsi menampilkan laporan untuk hari ini
+        function tampilkanHariIni() {
+            let today = new Date().toISOString().split("T")[0];
+            tampilkanLaporan(t => t.tanggal === today);
+        }
+
+        // Fungsi menampilkan laporan berdasarkan bulan
+        function tampilkanBulan(bulan) {
+            tampilkanLaporan(t => new Date(t.tanggal).getMonth() + 1 === bulan);
+        }
+
+        // Tampilkan laporan hari ini saat pertama kali dibuka
+        tampilkanHariIni();
+    </script>
+</body>
+</html>
